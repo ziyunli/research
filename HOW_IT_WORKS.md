@@ -47,7 +47,15 @@ This is the part most people misunderstand: this repo pattern does not require i
 ## Operating routine
 
 1. Start with a clear research question (issue optional).
-2. Prompt the async agent directly in Codex/Claude and ask it to create a new top-level folder for that investigation.
-3. Require ongoing updates to `notes.md`.
-4. Require a final `README.md` in that folder.
-5. Merge to `main` and let the action refresh root `README.md` and summaries.
+2. Create a feature branch from latest `origin/main` (never work directly on `main`).
+3. Prompt the async agent directly in Codex/Claude and ask it to create a new top-level folder for that investigation.
+4. Require ongoing updates to `notes.md`.
+5. Require a final `README.md` in that folder.
+6. Rebase or merge latest `origin/main` before final push, because workflow bot commits may have advanced `main`.
+7. Merge to `main` and let the action refresh root `README.md` and summaries.
+
+## Branch policy
+
+- `main` is integration only (human merges + workflow bot commits).
+- All human/agent work happens on `wip/<topic>` or `feature/<topic>` branches.
+- Do not push direct commits to `main` during normal development.
