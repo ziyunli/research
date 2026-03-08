@@ -14,3 +14,7 @@ Your final commit should include just that folder and selected items from its co
 Do NOT include full copies of code that you fetched as part of your investigation. Your final commit should include only new files you created or diffs showing changes you made to existing code.
 
 Don't create a _summary.md file - these are added automatically after you commit your changes.
+
+Do all work on a feature branch (`wip/<topic>` or `feature/<topic>`), not directly on `main`.
+
+Before final push, sync your branch with latest `origin/main` because workflow automation may have added commits.
