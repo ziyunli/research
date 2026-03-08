@@ -37,7 +37,7 @@ for d in research_dir.iterdir():
         except Exception:
             subdirs_with_dates.append((d.name, datetime.fromtimestamp(d.stat().st_mtime, tz=timezone.utc)))
 
-print(f"## {len(subdirs_with_dates)} research projects\\n")
+print(f"## {len(subdirs_with_dates)} research projects\n")
 
 subdirs_with_dates.sort(key=lambda x: x[1], reverse=True)
 
@@ -75,9 +75,9 @@ for dirname, commit_date in subdirs_with_dates:
                     break
 
     if github_url:
-        print(f"### [{title}]({github_url}#readme) ({date_formatted})\\n")
+        print(f"### [{title}]({github_url}#readme) ({date_formatted})\n")
     else:
-        print(f"### {title} ({date_formatted})\\n")
+        print(f"### {title} ({date_formatted})\n")
 
     if summary_path.exists():
         with open(summary_path, 'r') as f:
@@ -98,7 +98,7 @@ for dirname, commit_date in subdirs_with_dates:
         if result.returncode != 0:
             error_msg = f"LLM command failed for {dirname} with return code {result.returncode}"
             if result.stderr:
-                error_msg += f"\\nStderr: {result.stderr}"
+                error_msg += f"\nStderr: {result.stderr}"
             raise RuntimeError(error_msg)
         if result.stdout.strip():
             description = result.stdout.strip()
@@ -128,12 +128,12 @@ for dirname, _ in subdirs_with_dates:
 
     if AI_NOTE_START in content:
         pattern = re.escape(AI_NOTE_START) + r'.*?' + re.escape(AI_NOTE_END)
-        new_note = f"{AI_NOTE_START}\\n{AI_NOTE_CONTENT}\\n{AI_NOTE_END}"
+        new_note = f"{AI_NOTE_START}\n{AI_NOTE_CONTENT}\n{AI_NOTE_END}"
         new_content = re.sub(pattern, new_note, content, flags=re.DOTALL)
         if new_content != content:
             readme_path.write_text(new_content)
     else:
-        lines = content.split('\\n')
+        lines = content.split('\n')
         new_lines = []
         note_added = False
         for line in lines:
@@ -146,7 +146,7 @@ for dirname, _ in subdirs_with_dates:
                 note_added = True
 
         if note_added:
-            readme_path.write_text('\\n'.join(new_lines))
+            readme_path.write_text('\n'.join(new_lines))
 
 ]]]-->
 ## 0 research projects\n
