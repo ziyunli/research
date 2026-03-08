@@ -149,7 +149,7 @@ for dirname, _ in subdirs_with_dates:
             readme_path.write_text('\\n'.join(new_lines))
 
 ]]]-->
-## 0 research projects
+## 0 research projects\n
 <!--[[[end]]]-->
 
 ## How the automation works
