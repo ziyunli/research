@@ -37,10 +37,17 @@ gh repo create research-private --private --source=. --remote=origin --push
 
 Or create a separate private mirror and keep the same workflow files.
 
+## How tasks are initiated
+
+This is the part most people misunderstand: this repo pattern does not require issue-triggered automation.
+
+- Primary pattern: start work directly in Codex or Claude Code with a prompt, then have the agent open a PR or commit results.
+- Optional pattern: create an issue first when you want extra planning context, tracking, or review discussion.
+
 ## Operating routine
 
-1. Open an issue with a clear question.
-2. Ask the agent to create a new top-level folder for that investigation.
+1. Start with a clear research question (issue optional).
+2. Prompt the async agent directly in Codex/Claude and ask it to create a new top-level folder for that investigation.
 3. Require ongoing updates to `notes.md`.
 4. Require a final `README.md` in that folder.
 5. Merge to `main` and let the action refresh root `README.md` and summaries.
