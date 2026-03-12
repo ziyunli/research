@@ -1,0 +1,16 @@
+{
+  "name": "web-markdown-cli",
+  "version": "1.0.0",
+  "description": "CLI tool to convert web pages to Markdown using defuddle (from Obsidian Clipper)",
+  "type": "module",
+  "bin": {
+    "web-markdown": "./cli.mjs"
+  },
+  "scripts": {
+    "test": "node cli.mjs https://example.com"
+  },
+  "dependencies": {
+    "defuddle": "^0.12.0"
+  },
+  "license": "MIT"
+}
