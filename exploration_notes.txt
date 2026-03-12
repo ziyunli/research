@@ -1,0 +1,298 @@
+# Obsidian-Clipper HTML-to-Markdown Conversion Analysis
+
+## Project Structure
+Located at: /tmp/obsidian-clipper
+
+Key directories:
+- src/core/: Main application logic (popup.ts, settings.ts)
+- src/utils/: Utility functions including content extraction and conversion
+- src/utils/filters/: Template filter implementations (markdown.ts is key)
+- src/: Entry points (content.ts, background.ts)
+
+## Key Finding 1: Defuddle is the Core Library
+
+The actual HTML-to-Markdown conversion is powered by **Defuddle** (v0.12.0), an external library.
+
+Package.json shows:
+```
+"defuddle": "^0.12.0"
+```
+
+From README.md:
+"defuddle for content extraction and Markdown conversion"
+
+Source: https://github.com/kepano/defuddle
+
+Defuddle is a content extraction and readability library similar to Mozilla's Readability.js.
+It handles:
+1. HTML parsing and cleaning
+2. Main content extraction (removes headers, footers, navigation)
+3. Metadata extraction (title, author, published date, etc.)
+4. Direct HTML-to-Markdown conversion
+
+## Key Finding 2: Import Locations
+
+Defuddle is imported in 5 key files:
+
+1. **/tmp/obsidian-clipper/src/content.ts** (Lines 4-6)
+   - `import Defuddle from 'defuddle'`
+   - `import { createMarkdownContent } from 'defuddle/full'`
+   - Used in: `copyMarkdownToClipboard` handler (Line 220) and `getPageContent` handler (Line 254)
+
+2. **/tmp/obsidian-clipper/src/utils/content-extractor.ts** (Line 2)
+   - `import { createMarkdownContent } from 'defuddle/full'`
+   - Used in: `initializePageContent()` function (Lines 125, 144)
+
+3. **/tmp/obsidian-clipper/src/utils/reader.ts** (Line 1)
+   - `import Defuddle from 'defuddle/full'`
+   - Used in: `extractContent()` method (Lines 364-365)
+
+4. **/tmp/obsidian-clipper/src/utils/filters/markdown.ts** (Line 1)
+   - `import { createMarkdownContent } from 'defuddle/full'`
+   - This is a filter function that wraps the markdown conversion
+
+5. Package.json scripts:
+   - `"defuddle-dev"` and `"defuddle-prod"` scripts allow switching between dev/prod versions
+
+## Key Finding 3: Main Entry Points & Flow
+
+### Quick Markdown to Clipboard Flow
+File: `/tmp/obsidian-clipper/src/content.ts` (Lines 213-237)
+
+```
+User action: "Copy Markdown to Clipboard"
+    ↓
+background.ts sends "copyMarkdownToClipboard" message
+    ↓
+content.ts receives "copyMarkdownToClipboard" (Line 213)
+    ↓
+flattenShadowDom(document) - prepares DOM
+    ↓
+new Defuddle(document, { url: document.URL }).parse()
+    ↓
+createMarkdownContent(defuddled.content, document.URL)
+    ↓
+Result copied to clipboard
+```
+
+### Full Content Extraction & Clipping Flow
+File: `/tmp/obsidian-clipper/src/content.ts` (Lines 239-323)
+
+```
+User opens the clipper UI or initiates clipping
+    ↓
+background.ts → popup.ts (`/tmp/obsidian-clipper/src/core/popup.ts`)
+    ↓
+popup.ts calls extractPageContent(tabId)
+    ↓
+content-extractor.ts sends "getPageContent" message
+    ↓
+content.ts receives and processes:
+  1. flattenShadowDom(document) - handle web components
+  2. new Defuddle(document, { url }).parseAsync() - async parsing
+  3. Extracts: content, title, author, published, favicon, image, wordCount, etc.
+  4. Returns: ContentResponse with all metadata
+    ↓
+content-extractor.ts receives response
+    ↓
+initializePageContent() is called with:
+  - content (from defuddle)
+  - selectedHtml
+  - extractedContent (custom selectors)
+  - Other metadata
+    ↓
+createMarkdownContent(content, url) converts extracted HTML to Markdown
+    ↓
+Template rendering with variables:
+  - {{content}} = markdown version
+  - {{contentHtml}} = original HTML
+  - Other variables like {{title}}, {{author}}, etc.
+    ↓
+User's template is rendered with filters
+    ↓
+Result sent to Obsidian
+```
+
+## Key Finding 4: The Markdown Filter
+
+File: `/tmp/obsidian-clipper/src/utils/filters/markdown.ts`
+
+This is a simple wrapper around Defuddle's createMarkdownContent:
+
+```typescript
+import { createMarkdownContent } from 'defuddle/full';
+
+export const markdown = (str: string, param?: string): string => {
+	const baseUrl = param || 'about:blank';
+	try {
+		return createMarkdownContent(str, baseUrl);
+	} catch (error) {
+		console.error('Error in createMarkdownContent:', error);
+		return str;
+	}
+};
+```
+
+This allows templates to use the `|markdown` filter to convert HTML content to Markdown.
+
+Usage in templates: `{{ {{content}} | markdown }}`
+
+Integrated into the filters system at `/tmp/obsidian-clipper/src/utils/filters.ts`:
+- Line 26: imports markdown filter
+- Line 156: registered in filters object
+- Line 102: metadata entry
+
+## Key Finding 5: Content Extractor (Central Hub)
+
+File: `/tmp/obsidian-clipper/src/utils/content-extractor.ts` (Lines 100-216)
+
+The `initializePageContent()` function is the central hub that:
+1. Receives raw extracted content from defuddle
+2. Processes selected HTML (if user selected text)
+3. Converts content to markdown using `createMarkdownContent()`
+4. Processes highlights
+5. Builds variable dictionary with all available template variables
+
+Key variables it creates:
+- {{content}} - markdown version of full page
+- {{contentHtml}} - original HTML content
+- {{selection}} - markdown of selected text
+- {{selectionHtml}} - original HTML of selection
+- {{title}}, {{author}}, {{description}}, {{published}}
+- {{highlights}} - JSON array of highlight objects
+- {{schema:*}} - schema.org structured data
+- {{meta:*}} - meta tag data
+- Custom extracted variables from selectors
+
+## Key Finding 6: Defuddle's Two Import Modes
+
+There are two ways to import defuddle:
+
+1. **import Defuddle from 'defuddle'** (Light version)
+   - Used in content.ts for quick operations
+   - Smaller bundle size
+
+2. **import Defuddle from 'defuddle/full'** (Full version)
+   - Used in reader.ts and content-extractor.ts
+   - Includes all features and metadata extraction
+   - Also imports `createMarkdownContent` directly
+
+The `/full` suffix indicates a more feature-complete version with additional capabilities.
+
+## Key Finding 7: Reader Mode (Alternative HTML-to-Markdown Path)
+
+File: `/tmp/obsidian-clipper/src/utils/reader.ts` (Lines 353-376)
+
+Reader mode is an alternative reading experience that also uses Defuddle:
+
+```typescript
+private static async extractContent(doc: Document): Promise<{...}> {
+    const defuddle = new Defuddle(doc, { url: doc.URL });
+    const defuddled = await defuddle.parseAsync();
+    
+    return {
+        content: defuddled.content,
+        title: defuddled.title,
+        author: defuddled.author,
+        ...
+    };
+}
+```
+
+This extracts content for the reader view without markdown conversion.
+
+## Key Finding 8: Highlight Processing Pipeline
+
+After getting markdown content, the system can process highlights:
+
+File: `/tmp/obsidian-clipper/src/utils/content-extractor.ts` (Lines 131-153)
+
+1. Base markdown is created: `createMarkdownContent(content, url)`
+2. Highlights are individually converted: `createMarkdownContent(highlight.content, url)`
+3. Each highlight becomes a JSON object with:
+   - text: markdown version
+   - timestamp: ISO format from highlight ID
+   - notes: user notes (if any)
+4. All highlights are serialized to JSON and stored in {{highlights}} variable
+
+## Key Finding 9: Filter Integration System
+
+File: `/tmp/obsidian-clipper/src/utils/filters.ts`
+
+The filters system (with markdown as one of many filters):
+1. Parser: `tokenizer.ts` → `parser.ts` parse template strings
+2. Renderer: `renderer.ts` evaluates the AST and applies filters
+3. 60+ available filters including markdown
+4. Special handling for markdown filter:
+   - If no param provided, uses currentUrl
+   - Part of the built-in filters registry
+
+Flow: Template string → Tokenizer → Parser (AST) → Renderer (applies filters) → Output
+
+## Key Finding 10: Defuddle Configuration
+
+From content.ts and reader.ts, Defuddle is instantiated with:
+```typescript
+new Defuddle(document, { url: document.URL })
+```
+
+Options passed:
+- `document`: The DOM document to parse
+- `url`: The page URL (needed for relative URL resolution)
+
+Defuddle automatically:
+1. Identifies main content area
+2. Extracts text and structures it
+3. Preserves semantic HTML
+4. Extracts metadata from meta tags, schema.org, etc.
+5. Can convert to markdown via createMarkdownContent()
+
+## Summary: Conversion Pipeline
+
+```
+Raw DOM
+    ↓
+Defuddle.parse() / parseAsync()
+    ├→ Identifies main content
+    ├→ Extracts metadata (title, author, published, favicon, etc.)
+    └→ Returns cleaned HTML content + metadata
+    ↓
+createMarkdownContent(html, url)
+    └→ Converts HTML to Markdown while preserving structure
+    ↓
+Optional: |markdown filter in templates
+    └→ Same conversion, but can be applied to any HTML in template
+    ↓
+Template variables populated with:
+    - {{content}} = markdown
+    - {{contentHtml}} = original HTML
+    - Metadata variables
+    - Highlight data
+    ↓
+User template rendered with all filters
+    ↓
+Final Markdown note created in Obsidian
+```
+
+## Files Summary
+
+1. **Entry Points (Web Extension)**
+   - src/content.ts - Content script (page context)
+   - src/background.ts - Background script (extension context)
+   - src/core/popup.ts - Popup UI controller
+
+2. **Core Conversion**
+   - src/utils/content-extractor.ts - Orchestrates extraction and conversion
+   - src/utils/filters/markdown.ts - Markdown conversion filter
+   - src/utils/filters.ts - Filter system registry
+
+3. **Reading & Display**
+   - src/utils/reader.ts - Reader mode with defuddle parsing
+
+4. **Template System**
+   - src/utils/tokenizer.ts - Tokenizes template strings
+   - src/utils/parser.ts - Parses tokens into AST
+   - src/utils/renderer.ts - Evaluates AST and applies filters
+
+5. **Dependencies**
+   - defuddle (^0.12.0) - Main HTML parsing and markdown conversion library
