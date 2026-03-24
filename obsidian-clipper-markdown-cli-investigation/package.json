@@ -1,0 +1,15 @@
+{
+  "name": "obsidian-clipper-markdown-cli-investigation",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "clipper-md": "./clipper-md-cli.mjs"
+  },
+  "scripts": {
+    "test:smoke": "node ./clipper-md-cli.mjs --help"
+  },
+  "dependencies": {
+    "defuddle": "^0.12.0",
+    "jsdom": "^24.1.3"
+  }
+}
