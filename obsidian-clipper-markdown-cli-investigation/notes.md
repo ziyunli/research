@@ -18,3 +18,7 @@
 - Validation:
   - `npm run test:smoke` prints CLI help.
   - Used a `data:` URL to run an end-to-end extraction without external network access and got markdown output (`## Hello` + paragraph).
+- Pulled PR #4 review comments via GitHub API and found two requested fixes in `clipper-md-cli.mjs`.
+- Implemented stricter `--output/-o` arg validation: reject missing path or next token that looks like another flag.
+- Wrapped CLI execution in `main()` with top-level `try/catch` to print concise `Error: ...` and exit code 1 instead of stack traces.
+- Re-ran smoke + argument/error-path checks to verify behavior.

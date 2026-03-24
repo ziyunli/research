@@ -55,3 +55,9 @@ node ./clipper-md-cli.mjs <url> --output article.md
 ## Outcome
 
 Yes—the Obsidian Clipper page-to-Markdown feature can be extracted into a CLI with relatively little code because the extension already relies on Defuddle for both extraction and markdown conversion.
+
+## Follow-up fixes from PR review
+
+- Added strict CLI validation for `--output/-o`: the next token must be a filename, not missing and not another flag.
+- Added top-level error handling so failures print concise `Error: ...` messages and exit with code `1` instead of raw stack traces.
+

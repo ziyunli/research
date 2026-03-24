@@ -26,7 +26,11 @@ function parseArgs(argv) {
     } else if (token === '--json') {
       args.json = true;
     } else if (token === '--output' || token === '-o') {
-      args.output = argv[i + 1] || '';
+      const next = argv[i + 1];
+      if (!next || next.startsWith('-')) {
+        throw new Error('--output requires a file path');
+      }
+      args.output = next;
       i += 1;
     } else if (!args.url) {
       args.url = token;
@@ -85,23 +89,32 @@ async function extract(url) {
   };
 }
 
-const args = parseArgs(process.argv.slice(2));
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
 
-if (args.help || !args.url) {
-  usage();
-  process.exit(args.help ? 0 : 1);
+  if (args.help || !args.url) {
+    usage();
+    process.exit(args.help ? 0 : 1);
+  }
+
+  const result = await extract(args.url);
+
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (args.output) {
+    await fs.writeFile(args.output, result.markdown, 'utf8');
+    console.error(`Wrote markdown to ${args.output}`);
+  } else {
+    process.stdout.write(result.markdown);
+  }
 }
 
-const result = await extract(args.url);
-
-if (args.json) {
-  console.log(JSON.stringify(result, null, 2));
-  process.exit(0);
-}
-
-if (args.output) {
-  await fs.writeFile(args.output, result.markdown, 'utf8');
-  console.error(`Wrote markdown to ${args.output}`);
-} else {
-  process.stdout.write(result.markdown);
+try {
+  await main();
+} catch (error) {
+  console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
 }
