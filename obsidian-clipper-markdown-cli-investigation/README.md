@@ -1,5 +1,10 @@
 # Obsidian Clipper Markdown Extraction Investigation
 
+<!-- AI-GENERATED-NOTE -->
+> [!NOTE]
+> This is an AI-generated research report. All text and code in this report was created by an LLM (Large Language Model). For more details on this workflow, see the [main research repository](https://github.com/ziyunli/research).
+<!-- /AI-GENERATED-NOTE -->
+
 ## What I investigated
 
 I cloned `https://github.com/obsidianmd/obsidian-clipper` into `/tmp/obsidian-clipper` and traced how page content gets turned into Markdown.
